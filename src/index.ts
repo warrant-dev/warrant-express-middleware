@@ -10,7 +10,6 @@ export type GetUserIdFunc = (req: Request) => string | number | null;
 export type OnAuthorizeFailure = (req: Request, res: Response) => any;
 
 export interface WarrantConfig {
-    clientId: string;
     clientKey: string;
     getParam?: GetParamFunc;
     getUserId: GetUserIdFunc;
