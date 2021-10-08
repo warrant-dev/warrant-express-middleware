@@ -77,7 +77,18 @@ app.get("/api/posts/:postId", authorize("post", "postId", "viewer"), (req, res) 
 });
 ```
 
-## Options
+The middleware function takes 3 arguments:
+
+#### `objectType`
+`string` - This is the object type you want to perform an access check for. To learn more about creating object types, visit our [documentation](https://docs.warrant.dev/).
+
+#### `objectIdParam`
+`string` - This is the url parameter containing the id of the object you want to perform an access check for. You can optionally configure how the middleware function gets this param using the `getParam` option (more on this in [Middleware Options](#configuration-options)).
+
+#### `relation`
+`string` - This is the relation you want to perform an access check for. To learn more about relations, visit our [documentation](https://docs.warrant.dev/).
+
+## Configuration Options
 The middleware supports options that allow you to configure how it works during the initialization step. All options are required unless stated that they are optional.
 
 ### `clientKey`
