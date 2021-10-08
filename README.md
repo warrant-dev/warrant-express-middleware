@@ -83,7 +83,7 @@ The middleware function takes 3 arguments:
 `string` - This is the object type you want to perform an access check for. To learn more about creating object types, visit our [documentation](https://docs.warrant.dev/).
 
 #### `objectIdParam`
-`string` - This is the url parameter containing the id of the object you want to perform an access check for. You can optionally configure how the middleware function gets this param using the `getParam` option (more on this in [Middleware Options](#configuration-options)).
+`string` - This is the url parameter containing the id of the object you want to perform an access check for. You can optionally configure how the middleware function gets this param using the `getParam` option (more on this in [Configuration Options](#configuration-options)).
 
 #### `relation`
 `string` - This is the relation you want to perform an access check for. To learn more about relations, visit our [documentation](https://docs.warrant.dev/).
