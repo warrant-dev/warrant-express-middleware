@@ -16,106 +16,144 @@ npm install @warrantdev/warrant-express-middleware
 ## Usage
 
 ### Initializing the Middleware
+
 Import the `createMiddleware` function and call it with some initialization options to get a configured middleware function you can protect your API routes with:
+
 ```js
 const Warrant = require("@warrantdev/warrant-express-middleware");
-const authorize = Warrant.createMiddleware({
-    clientKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
-    getUserId: (req) => MyUserSession.getUserId(req).toString(), // Tell the middleware how to get the current user in your API
+const { hasPermission, hasAccess } = Warrant.createMiddleware({
+  clientKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
+  getUserId: (req) => MyUserSession.getUserId(req).toString(), // Tell the middleware how to get the current user in your API
 });
 
-// The authorize middleware will run before the route code.
-app.get("/api/posts/:postId", authorize("post", "postId", "viewer"), (req, res) => {
+// The hasAccess middleware will run before the route code.
+app.get(
+  "/api/posts/:postId",
+  hasAccess("post", (req) => req.params["postId"], "viewer"),
+  (req, res) => {
     const { postId } = req.params;
     const post = getPost(postId);
 
     if (!post) {
-        res.sendStatus(404);
-        return;
+      res.sendStatus(404);
+      return;
     }
 
     res.json(post);
-});
+  }
+);
 ```
+
 Or using ES modules:
+
 ```js
 import { createMiddleware } from "@warrantdev/warrant-express-middleware";
-const authorize = Warrant.createMiddleware({
-    clientKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
-    getUserId: (req) => MyUserSession.getUserId(req).toString(), // Tell the middleware how to get the current user in your API
+const { hasPermission, hasAccess } = Warrant.createMiddleware({
+  clientKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
+  getUserId: (req) => MyUserSession.getUserId(req).toString(), // Tell the middleware how to get the current user in your API
 });
 
-// The authorize middleware will run before the route code.
-app.get("/api/posts/:postId", authorize("post", "postId", "viewer"), (req, res) => {
+// The hasAccess middleware will run before the route code.
+app.get(
+  "/api/posts/:postId",
+  hasAccess("post", (req) => req.params["postId"], "viewer"),
+  (req, res) => {
     const { postId } = req.params;
     const post = getPost(postId);
 
     if (!post) {
-        res.sendStatus(404);
-        return;
+      res.sendStatus(404);
+      return;
     }
 
     res.json(post);
-});
+  }
+);
 ```
 
 ### Using the Middleware
-Once you've initialized the middleware as shown above, you can use it to protect your Express.js API routes:
+
+Once you've initialized the middleware as shown above, you can use either the `hasPermission` or the `hasAccess` method to protect your Express.js API routes:
+
+#### `hasPermission`
+
 ```js
-// The authorize middleware will check that the current user is a "viewer"
+// The hasPermission middleware will check that the current user
+// has the specified permission before executing the route.
+app.post("/api/posts", hasPermission("create-posts"), (req, res) => {
+  try {
+    const newPost = createPost(req.body);
+    res.json(newPost);
+  } catch (e) {
+    res.sendStatus(e.code);
+  }
+});
+```
+
+#### `hasAccess`
+
+```js
+// The hasAccess middleware will check that the current user is a "viewer"
 // of the particular Post with id postId before executing the route.
-app.get("/api/posts/:postId", authorize("post", "postId", "viewer"), (req, res) => {
+app.get(
+  "/api/posts/:postId",
+  hasAccess("post", (req) => req.params["postId"], "viewer"),
+  (req, res) => {
     const { postId } = req.params;
     const post = getPost(postId);
 
     if (!post) {
-        res.sendStatus(404);
-        return;
+      res.sendStatus(404);
+      return;
     }
 
     res.json(post);
-});
+  }
+);
 ```
 
-The middleware function takes 3 arguments:
+The `hasPermission` middleware function takes a single argument:
+
+#### `permissionId`
+
+`string` - This is the string id of the permission you want to check for (ex: `"view-posts"`).
+
+The `hasAccess` middleware function takes 3 arguments:
 
 #### `objectType`
+
 `string` - This is the object type you want to perform an access check for. To learn more about creating object types, visit our [documentation](https://docs.warrant.dev/).
 
-#### `objectIdParam`
-`string` - This is the url parameter containing the id of the object you want to perform an access check for. You can optionally configure how the middleware function gets this param using the `getParam` option (more on this in [Configuration Options](#configuration-options)).
+#### `getObjectId(req)`
+
+`function` - A function executed by the middleware in order to get the id of the object for which to perform the access check. In most scenarios, this will be the value of one of the request params. An example of what this function might look like:
+
+```js
+(req: Request) => req.params["myParam"];
+```
 
 #### `relation`
+
 `string` - This is the relation you want to perform an access check for. To learn more about relations, visit our [documentation](https://docs.warrant.dev/).
 
 ## Configuration Options
+
 The middleware supports options that allow you to configure how it works during the initialization step. All options are required unless stated that they are optional.
 
 ### `clientKey`
+
 `string` - This is the API Key from the Warrant Dashboard. Without this value, the middleware cannot make requests to the Warrant API to perform access checks in your application.
 
 ### `getUserId(req)`
+
 `function` - A function executed by the middleware in order to get the userId for which to perform an access check. Use this function to tell the middleware how to get the current user's id. Usually this user is determined using the current session or authentication token provided in the request.
 
-### `getParam(req, paramName)` (Optional)
-`function` - A function executed by the middleware in order to get the objectId for which to perform an access check. Use this function to tell the middleware how to get the objectId for an API endpoint. This option defaults to:
-```js
-(req: Request, paramName: string) => req.params[paramName]
-```
-
 ### `onAuthorizeFailure(req, res)` (Optional)
+
 `function` - A function executed by the middleware when an access check fails (the user is unauthorized). Use this function to tell the middleware what to do when a user fails an access check. This option defaults to:
-```js
-(req: Request, res: Response) => res.sendStatus(401)
-```
 
-**NOTE:** To ignore the `objectId` when performing authorization calls using the middleware, you can pass the constant `WARRANT_IGNORE_ID` for the `objectIdParam` parameter. You must have a corresponding warrant that grants access to **ANY** user on the given `objectType` for this check to succeed.
 ```js
-import { WARRANT_IGNORE_ID } from "@warrantdev/warrant-express-middleware";
-
-app.get("/api/posts", authorize("post", WARRANT_IGNORE_ID, "viewer"), (req, res) => {
-    res.json(getPosts());
-});
+(req: Request, res: Response) => res.sendStatus(401);
 ```
 
 We’ve used a random API key in these code examples. Replace it with your
