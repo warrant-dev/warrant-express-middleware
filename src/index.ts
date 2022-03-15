@@ -3,23 +3,32 @@ import { Request, Response, NextFunction } from "express";
 
 export { WARRANT_IGNORE_ID } from "@warrantdev/warrant-node";
 
-export type GetParamFunc = (req: Request, paramName: string) => string;
+export type GetObjectIdFunc = (req: Request) => string;
 
 export type GetUserIdFunc = (req: Request) => string | number | null;
 
 export type OnAuthorizeFailure = (req: Request, res: Response) => any;
 
+export type HasPermissionMiddleware = (permissionId: string) => (req: Request, res: Response, next?: NextFunction) => void;
+
+export type HasAccessMiddleware = (objectType: string, getObjectId: GetObjectIdFunc, relation: string) => (req: Request, res: Response, next?: NextFunction) => void;
+
 export interface WarrantConfig {
     clientKey: string;
-    getParam?: GetParamFunc;
     getUserId: GetUserIdFunc;
+    getObjectId?: GetObjectIdFunc;
     onAuthorizeFailure?: OnAuthorizeFailure;
 }
 
-function createAuthorizeRoute(client: Client, getParam: GetParamFunc, getUserId: GetUserIdFunc, onAuthorizeFailure: OnAuthorizeFailure) {
-    return (objectType: string, objectIdParam: string, relation: string) => {
+export interface WarrantMiddleware {
+    hasPermission: HasPermissionMiddleware;
+    hasAccess: HasAccessMiddleware;
+}
+
+function createHasAccessMiddleware(client: Client, getUserId: GetUserIdFunc, onAuthorizeFailure: OnAuthorizeFailure) {
+    return (objectType: string, getObjectId: GetObjectIdFunc, relation: string) => {
         return async (req: Request, res: Response, next?: NextFunction) => {
-            const objectId = getParam(req, objectIdParam);
+            const objectId = getObjectId(req);
             const userId = getUserId(req);
 
             if (userId === null) {
@@ -40,18 +49,39 @@ function createAuthorizeRoute(client: Client, getParam: GetParamFunc, getUserId:
     };
 }
 
-export function createMiddleware(config: WarrantConfig) {
-    const client = new Client(config.clientKey);
-    let getParam = (req: Request, paramName: string) => req.params[paramName];
-    let onAuthorizeFailure = (req: Request, res: Response) => res.sendStatus(401);
+function createHasPermissionMiddleware(client: Client, getUserId: GetUserIdFunc, onAuthorizeFailure: OnAuthorizeFailure) {
+    return (permissionId: string) => {
+        return async (req: Request, res: Response, next?: NextFunction) => {
+            const userId = getUserId(req);
 
-    if (config.getParam) {
-        getParam = config.getParam;
-    }
+            if (userId === null) {
+                onAuthorizeFailure(req, res);
+                return;
+            }
+
+            if (await client.hasPermission(permissionId, userId.toString())) {
+                if (next) {
+                    next();
+                }
+
+                return;
+            }
+
+            onAuthorizeFailure(req, res);
+        };
+    };
+}
+
+export function createMiddleware(config: WarrantConfig): WarrantMiddleware {
+    const client = new Client(config.clientKey);
+    let onAuthorizeFailure = (req: Request, res: Response) => res.sendStatus(401);
 
     if (config.onAuthorizeFailure) {
         onAuthorizeFailure = config.onAuthorizeFailure;
     }
 
-    return createAuthorizeRoute(client, getParam, config.getUserId, onAuthorizeFailure);
+    return {
+        hasPermission: createHasPermissionMiddleware(client, config.getUserId, onAuthorizeFailure),
+        hasAccess: createHasAccessMiddleware(client, config.getUserId, onAuthorizeFailure),
+    };
 }
