@@ -1,6 +1,6 @@
 {
   "name": "@warrantdev/warrant-express-middleware",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Expressjs Middleware for enforcing access control on API endpoints using the Warrant API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "build-local": "npm run build && npm pack",
     "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
