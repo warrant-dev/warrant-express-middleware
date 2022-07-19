@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/warrant-dev/warrant-express-middleware#readme",
   "dependencies": {
-    "@warrantdev/warrant-node": "^1.0.1"
+    "@warrantdev/warrant-node": "^2.1.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.13",
