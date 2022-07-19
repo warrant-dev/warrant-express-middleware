@@ -1,8 +1,6 @@
 import { Client } from "@warrantdev/warrant-node";
 import { Request, Response, NextFunction } from "express";
 
-export { WARRANT_IGNORE_ID } from "@warrantdev/warrant-node";
-
 export type GetObjectIdFunc = (req: Request) => string;
 
 export type GetUserIdFunc = (req: Request) => string | number | null;
@@ -14,7 +12,7 @@ export type HasPermissionMiddleware = (permissionId: string) => (req: Request, r
 export type HasAccessMiddleware = (objectType: string, getObjectId: GetObjectIdFunc, relation: string) => (req: Request, res: Response, next?: NextFunction) => void;
 
 export interface WarrantConfig {
-    clientKey: string;
+    client: Client;
     getUserId: GetUserIdFunc;
     getObjectId?: GetObjectIdFunc;
     onAuthorizeFailure?: OnAuthorizeFailure;
@@ -36,11 +34,19 @@ function createHasAccessMiddleware(client: Client, getUserId: GetUserIdFunc, onA
                 return;
             }
 
-            if (await client.isAuthorized(objectType, objectId, relation, userId.toString())) {
-                if (next) {
-                    next();
-                }
-
+            const hasAccess = await client.isAuthorized({
+                warrants: [{
+                    objectType,
+                    objectId,
+                    relation,
+                    subject: {
+                        objectType: "user",
+                        objectId: userId.toString(),
+                    },
+                }],
+            });
+            if (hasAccess) {
+                if (next) next();
                 return;
             }
 
@@ -59,11 +65,12 @@ function createHasPermissionMiddleware(client: Client, getUserId: GetUserIdFunc,
                 return;
             }
 
-            if (await client.hasPermission(permissionId, userId.toString())) {
-                if (next) {
-                    next();
-                }
-
+            const hasPermission = await client.hasPermission({
+                permissionId,
+                userId: userId.toString(),
+            });
+            if (hasPermission) {
+                if (next) next();
                 return;
             }
 
@@ -73,7 +80,6 @@ function createHasPermissionMiddleware(client: Client, getUserId: GetUserIdFunc,
 }
 
 export function createMiddleware(config: WarrantConfig): WarrantMiddleware {
-    const client = new Client(config.clientKey);
     let onAuthorizeFailure = (req: Request, res: Response) => res.sendStatus(401);
 
     if (config.onAuthorizeFailure) {
@@ -81,7 +87,7 @@ export function createMiddleware(config: WarrantConfig): WarrantMiddleware {
     }
 
     return {
-        hasPermission: createHasPermissionMiddleware(client, config.getUserId, onAuthorizeFailure),
-        hasAccess: createHasAccessMiddleware(client, config.getUserId, onAuthorizeFailure),
+        hasPermission: createHasPermissionMiddleware(config.client, config.getUserId, onAuthorizeFailure),
+        hasAccess: createHasAccessMiddleware(config.client, config.getUserId, onAuthorizeFailure),
     };
 }
