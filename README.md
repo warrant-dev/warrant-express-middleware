@@ -10,6 +10,7 @@ Use [Warrant](https://warrant.dev/) in server-side Express.js projects.
 Use `npm` to install the Warrant module:
 
 ```sh
+npm install @warrantdev/warrant-node
 npm install @warrantdev/warrant-express-middleware
 ```
 
@@ -20,10 +21,13 @@ npm install @warrantdev/warrant-express-middleware
 Import the `createMiddleware` function and call it with some initialization options to get a configured middleware function you can protect your API routes with:
 
 ```js
-const Warrant = require("@warrantdev/warrant-express-middleware");
-const { hasPermission, hasAccess } = Warrant.createMiddleware({
-  clientKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
-  getUserId: (req) => MyUserSession.getUserId(req).toString(), // Tell the middleware how to get the current user in your API
+const Warrant = require("@warrantdev/warrant-node");
+const WarrantMw = require("@warrantdev/warrant-express-middleware");
+const { hasPermission, hasAccess } = WarrantMw.createMiddleware({
+  client: new Warrant({
+    apiKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
+  }),
+  getUserId: (req, res) => MyUserSession.getUserId(req, res).toString(), // Tell the middleware how to get the current user in your API
 });
 
 // The hasAccess middleware will run before the route code.
@@ -47,10 +51,13 @@ app.get(
 Or using ES modules:
 
 ```js
+import Warrant from "@warrantdev/warrant-node";
 import { createMiddleware } from "@warrantdev/warrant-express-middleware";
 const { hasPermission, hasAccess } = Warrant.createMiddleware({
-  clientKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
-  getUserId: (req) => MyUserSession.getUserId(req).toString(), // Tell the middleware how to get the current user in your API
+  client: new Warrant({
+    apiKey: "api_test_f5dsKVeYnVSLHGje44zAygqgqXiLJBICbFzCiAg1E=",
+  }),
+  getUserId: (req, res) => MyUserSession.getUserId(req, res).toString(), // Tell the middleware how to get the current user in your API
 });
 
 // The hasAccess middleware will run before the route code.
@@ -124,7 +131,7 @@ The `hasAccess` middleware function takes 3 arguments:
 
 `string` - This is the object type you want to perform an access check for. To learn more about creating object types, visit our [documentation](https://docs.warrant.dev/).
 
-#### `getObjectId(req)`
+#### `getObjectId(req, res)`
 
 `function` - A function executed by the middleware in order to get the id of the object for which to perform the access check. In most scenarios, this will be the value of one of the request params. An example of what this function might look like:
 
@@ -144,7 +151,7 @@ The middleware supports options that allow you to configure how it works during 
 
 `string` - This is the API Key from the Warrant Dashboard. Without this value, the middleware cannot make requests to the Warrant API to perform access checks in your application.
 
-### `getUserId(req)`
+### `getUserId(req, res)`
 
 `function` - A function executed by the middleware in order to get the userId for which to perform an access check. Use this function to tell the middleware how to get the current user's id. Usually this user is determined using the current session or authentication token provided in the request.
 
