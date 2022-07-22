@@ -1,9 +1,9 @@
 import { Client } from "@warrantdev/warrant-node";
 import { Request, Response, NextFunction } from "express";
 
-export type GetObjectIdFunc = (req: Request) => string;
+export type GetObjectIdFunc = (req: Request, res: Response) => string;
 
-export type GetUserIdFunc = (req: Request) => string | number | null;
+export type GetUserIdFunc = (req: Request, res: Response) => string | number | null;
 
 export type OnAuthorizeFailure = (req: Request, res: Response) => any;
 
@@ -26,8 +26,8 @@ export interface WarrantMiddleware {
 function createHasAccessMiddleware(client: Client, getUserId: GetUserIdFunc, onAuthorizeFailure: OnAuthorizeFailure) {
     return (objectType: string, getObjectId: GetObjectIdFunc, relation: string) => {
         return async (req: Request, res: Response, next?: NextFunction) => {
-            const objectId = getObjectId(req);
-            const userId = getUserId(req);
+            const objectId = getObjectId(req, res);
+            const userId = getUserId(req, res);
 
             if (userId === null) {
                 onAuthorizeFailure(req, res);
@@ -58,7 +58,7 @@ function createHasAccessMiddleware(client: Client, getUserId: GetUserIdFunc, onA
 function createHasPermissionMiddleware(client: Client, getUserId: GetUserIdFunc, onAuthorizeFailure: OnAuthorizeFailure) {
     return (permissionId: string) => {
         return async (req: Request, res: Response, next?: NextFunction) => {
-            const userId = getUserId(req);
+            const userId = getUserId(req, res);
 
             if (userId === null) {
                 onAuthorizeFailure(req, res);
