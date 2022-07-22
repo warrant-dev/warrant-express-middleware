@@ -1,6 +1,6 @@
 {
   "name": "@warrantdev/warrant-express-middleware",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Expressjs Middleware for enforcing access control on API endpoints using the Warrant API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
