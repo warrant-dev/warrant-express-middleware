@@ -3,7 +3,6 @@
 Use [Warrant](https://warrant.dev/) in server-side Express.js projects.
 
 [![npm](https://img.shields.io/npm/v/@warrantdev/warrant-express-middleware)](https://www.npmjs.com/package/@warrantdev/warrant-express-middleware)
-[![Slack](https://img.shields.io/badge/slack-join-brightgreen)](https://join.slack.com/t/warrantcommunity/shared_invite/zt-12g84updv-5l1pktJf2bI5WIKN4_~f4w)
 
 ## Installation
 
